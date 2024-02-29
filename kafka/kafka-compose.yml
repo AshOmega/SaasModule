@@ -1,0 +1,88 @@
+---
+version: '2'
+volumes:
+  broker-data:
+  broker-secrets:
+  zookeeper-data:
+  zookeeper-log:
+  zookeeper-secrets:
+services:
+  zookeeper-1:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - type: volume
+        source: zookeeper-data
+        target: /var/lib/zookeeper/data
+      - type: volume
+        source: zookeeper-log
+        target: /var/lib/zookeeper/log
+      - type: volume
+        source: zookeeper-secrets
+        target: /etc/zookeeper/secrets
+    ports:
+      - 22181:2181
+
+  zookeeper-2:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - type: volume
+        source: zookeeper-data
+        target: /var/lib/zookeeper/data
+      - type: volume
+        source: zookeeper-log
+        target: /var/lib/zookeeper/log
+      - type: volume
+        source: zookeeper-secrets
+        target: /etc/zookeeper/secrets
+    ports:
+      - 32181:2181
+  
+  kafka-1:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - type: volume
+        source: broker-data
+        target: /var/lib/kafka/data
+      - type: volume
+        source: broker-secrets
+        target: /etc/kafka/secrets
+  kafka-2:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper-1
+      - zookeeper-2
+    ports:
+      - 39092:39092
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-1:2181,zookeeper-2:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - type: volume
+        source: broker-data
+        target: /var/lib/kafka/data
+      - type: volume
+        source: broker-secrets
+        target: /etc/kafka/secrets
